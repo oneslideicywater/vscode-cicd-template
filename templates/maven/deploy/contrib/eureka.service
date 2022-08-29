@@ -1,0 +1,15 @@
+[Unit]
+Description=rsmis-eureka-service
+# require
+# Requires=postgresql-9.6.service
+Wants=hasplmd.service
+# start after hasplmd
+After=hasplmd.service
+
+[Service]
+EnvironmentFile=/var/spool/rsmis/rsmis.env
+Type=forking
+ExecStart=/var/spool/rsmis/rsmis-eureka-service/start.sh
+
+[Install]
+WantedBy=multi-user.target

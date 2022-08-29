@@ -1,0 +1,27 @@
+<service>
+  <!-- ID of the service. It should be unique across the Windows system-->
+  <id>rsmis-eureka-service</id>
+  <!-- Display name of the service -->
+  <name>rsmis-eureka-service (powered by geoway)</name>
+  <!-- Service description -->
+  <description>This service is a service created by an awesome group.</description>
+  <!-- Path to the executable, which should be started -->
+  <executable>gava</executable>
+  <arguments>-jar rsmis-eureka-service-%RSMIS_VERSION%-encrypted.jar</arguments>
+  <!-- start mode -->
+  <startmode>Automatic</startmode>
+  <!-- delay start -->
+  <delayedAutoStart>true</delayedAutoStart>
+  <!-- restart while the first failure -->
+  <onfailure action="restart" delay="10 sec"/>
+  <!-- restart while the second failure -->
+  <onfailure action="restart" delay="20 sec"/>
+  <!-- do nothing while the third failure -->
+  <onfailure action="none" delay="40 sec"/>
+  <!-- depend module -->
+  <depend>hasplms</depend>
+  <logpath>%BASE%\logs</logpath>
+  <log mode="roll-by-time">
+    <pattern>yyyyMMdd</pattern>
+  </log>
+</service>

@@ -1,0 +1,50 @@
+{
+  "name": "cicd-template",
+  "displayName": "cicd-template",
+  "description": "",
+  "publisher": "oneslideicywater",
+  "version": "2.0.1",
+  "icon": "cicd-template.png",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:cicd-template.easycicd"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "cicd-template.easycicd",
+        "title": "easycicd"
+      }
+    ]
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "node ./test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^7.2.0",
+    "@types/mocha": "^9.1.1",
+    "@types/node": "16.x",
+    "@types/vscode": "^1.70.0",
+    "@vscode/test-electron": "^2.1.5",
+    "eslint": "^8.20.0",
+    "glob": "^8.0.3",
+    "mocha": "^10.0.0",
+    "typescript": "^4.7.4"
+  },
+  "dependencies": {
+    "fs-extra": "^10.1.0",
+    "js-yaml": "^4.1.0",
+    "json-to-pretty-yaml": "^1.2.2",
+    "prettyoutput": "^1.2.0",
+    "spawn-command": "^0.0.2-1",
+    "xml2js": "^0.4.23"
+  }
+}

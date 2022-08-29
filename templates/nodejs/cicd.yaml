@@ -1,0 +1,47 @@
+name: rsmis-main-app
+namespace: rsmis
+maintainers:
+  - zhupan
+path: .
+# build-tool: npm
+env:
+  JOB_BASE_PATH: /jenkins/agent/workspace/rsmis_main-app
+  NODE_IMAGE: registry.geoway.com/nodejs/node:14.20.0-buster-x86
+stages:
+  - name: build
+    shell: 
+      - docker run --network host --rm -t -v ${JOB_BASE_PATH}_${BRANCH_NAME}:/opt/workdir ${NODE_IMAGE} /bin/bash /opt/workdir/build.sh
+  - name: docker
+    shell:
+      - docker build -t ${CURRENT_DOCKER_IMAGE_TAG} .
+      - docker push ${CURRENT_DOCKER_IMAGE_TAG}
+      - docker save ${CURRENT_DOCKER_IMAGE_TAG} > ${CURRENT_ARTIFACT_FILENAME}.tar
+      - mc cp ${CURRENT_ARTIFACT_FILENAME}.tar ${CURRENT_DOCKER_IMAGE_OBJECT_PATH}
+  - name: docker-arm64
+    shell:
+      - docker buildx build -t ${CURRENT_DOCKER_IMAGE_TAG}-arm64 -f Dockerfile-arm64 --platform=linux/arm64 . --load
+      - docker push ${CURRENT_DOCKER_IMAGE_TAG}-arm64
+  - name: helm
+    shell:
+      # deploy to x86-64 kubernetes
+      - (test ${GIT_BRANCH} = 'master' && kubectl config use-context prod) ||
+        true
+      - (test ${GIT_BRANCH} = 'develop' && kubectl config use-context dev) ||
+        true
+      - cd .helm; rm -f *.tgz; helm package .
+      - cd .helm; curl --data-binary "@${CHART_NAME}-${CHART_VERSION}.tgz" ${HELM_REGISTRY}/api/charts
+      - helm repo update geoway;helm upgrade ${APP_NAME} geoway/${CHART_NAME}
+        --version ${CHART_VERSION} --install -n ${NAMESPACE}
+      - kubectl rollout restart deployment ${CHART_NAME} -n ${NAMESPACE}
+  - name: helm-arm64
+    shell:
+      # deploy to arm64 kubernetes
+      - (test ${GIT_BRANCH} = 'develop' && kubectl config use-context arm64) ||
+        true
+      - helm repo update geoway;helm upgrade --set imageName=${CURRENT_DOCKER_IMAGE_TAG}-arm64  ${APP_NAME} geoway/${CHART_NAME} --version ${CHART_VERSION} --install -n ${NAMESPACE}
+      - kubectl rollout restart deployment ${CHART_NAME} -n ${NAMESPACE}
+
+resources:
+  - name: dist
+    source: dist
+    dist: ""

@@ -1,0 +1,4 @@
+FROM registry.geoway.com/nginx/nginx:arm64
+ADD dist/ /usr/share/nginx/html/
+ADD nginx.conf.template /etc/nginx/templates/default.conf.template
+
