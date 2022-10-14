@@ -204,7 +204,28 @@ function generateYaml(name,ns,maintainers,pm,ptype){
     return "only supported maven and nodejs"
 }
 
+// read from cicd.yaml and find options
+function readEasyBuildOptions(content){
+    let cicd=yaml.load(content)
+    return {
+        jenkins: {
+            url: cicd["easybuild"]["jenkins"]["url"]
+        },
+        job:{
+            name: cicd["easybuild"]["job"]["name"],
+            branch: ""
+        },
+        auth:{
+            user: cicd["easybuild"]["auth"]["user"],
+            // default read from EASYBUILD_TOKEN
+            token: cicd["easybuild"]["auth"]["token"]
+        }
+    }
+}
+
+
 module.exports = {
 	generateYaml,
-	ObjectToYaml
+	ObjectToYaml,
+    readEasyBuildOptions
 }

@@ -10,7 +10,35 @@ It's a very simple tools to generate pipeline manifests.
 
 ## Requirements
 
+
+### Generate cicd manifest
+
 input `Ctrl+Shift+P`, enter `easycicd`. you're done, That's it!
+
+### Trigger remote build
+
+since v3.0.0, you can trigger remote pipeline build, with some code snippet under `cicd.yaml`
+
+
+a working example: 
+
+
+> how to get a token?  login to jenkins, Click your username at left-top, `Configure` -> `API Token`
+
+- cicd.yaml
+```yaml
+easybuild: 
+  jenkins:
+    url: http://xxx.xxx.xxx.xxx:8080
+  job: 
+    name: "myapp"
+  auth:
+    user: "admin"
+    token: ""  # your token here
+```
+
+after add it to `cicd.yaml`. Enter `Ctrl+Shift+P`, input `easybuild`. you'll trigger a job build.
+
 
 ## Extension Settings
 

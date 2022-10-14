@@ -3,7 +3,7 @@
   "displayName": "cicd-template",
   "description": "",
   "publisher": "oneslideicywater",
-  "version": "2.0.1",
+  "version": "3.0.1",
   "icon": "cicd-template.png",
   "engines": {
     "vscode": "^1.70.0"
@@ -12,7 +12,8 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:cicd-template.easycicd"
+    "onCommand:cicd-template.easycicd",
+    "onCommand:cicd-template.easybuild"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -20,6 +21,10 @@
       {
         "command": "cicd-template.easycicd",
         "title": "easycicd"
+      },
+      {
+        "command": "cicd-template.easybuild",
+        "title": "easybuild"
       }
     ]
   },
@@ -40,6 +45,8 @@
     "typescript": "^4.7.4"
   },
   "dependencies": {
+    "axios": "^1.1.2",
+    "env-file-reader": "^1.0.5",
     "fs-extra": "^10.1.0",
     "js-yaml": "^4.1.0",
     "json-to-pretty-yaml": "^1.2.2",
