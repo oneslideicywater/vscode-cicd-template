@@ -10,14 +10,27 @@ function npmcicd(name,ns,maintainers){
         maintainers: maintainers,
         path: ".",
         env: {
-          JOB_BASE_PATH: "/jenkins/agent/workspace/"+ns+"_"+name,
-          NODE_IMAGE: "registry.geoway.com/nodejs/node:14.20.0-buster-x86"
+          NODE_IMAGE: "registry.geoway.com/nodejs/node:14.20.0-buster-x86",
+          BOTHOOK: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=b3ff4739-f1d8-44ef-9f29-6eefbfca5796"
+        },
+        
+        easybuild: {
+            jenkins: {
+                url: "http://172.16.66.37:30084"
+            },
+            job: {
+                name: "<your job name>"
+            },
+            auth: {
+                user: "admin",
+                token: "1101fad89b98995083388824f0f2ce140b"
+            }
         },
         stages: [
             {
                 name: "build",
                 shell: [
-                    "docker run --network host --rm -t -v ${JOB_BASE_PATH}_${BRANCH_NAME}:/opt/workdir ${NODE_IMAGE} /bin/bash /opt/workdir/build.sh"
+                    "docker run --network host --rm -t -v ${WORKSPACE#/home}:/opt/workdir ${NODE_IMAGE} /bin/bash /opt/workdir/build.sh"
                 ]
             },
             {
@@ -76,7 +89,7 @@ function mavencicd(name,ns,maintainers,modules){
         {
             name: "build",
             shell: [
-                "docker run --network host --rm -t -v ${JOB_BASE_PATH}_${BRANCH_NAME}:/opt/workdir ${NODE_IMAGE} /bin/bash /opt/workdir/build.sh"
+                "mvn -B clean install"
             ]
         },
         {
@@ -140,13 +153,25 @@ function mavencicd(name,ns,maintainers,modules){
         maintainers: maintainers,
         path: ".",
         env: {
-            COMMON_VALUE: "http://gitlab.geoway.com/awesome-drivers/kubernetes/-/raw/develop/common/common.yaml"
+            BOTHOOK: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=b3ff4739-f1d8-44ef-9f29-6eefbfca5796"
         }, 
+        easybuild: {
+            jenkins: {
+                url: "http://172.16.66.37:30084"
+            },
+            job: {
+                name: "<your job name>"
+            },
+            auth: {
+                user: "admin",
+                token: "1101fad89b98995083388824f0f2ce140b"
+            }
+        },
         stages: [
             {
                 name: "mvn",
                 shell: [
-                    "mvn clean install"
+                    "mvn -B clean install"
                 ]
             },
         ],
@@ -157,7 +182,7 @@ function mavencicd(name,ns,maintainers,modules){
         content.stages.splice(0,0,{
             name: "mvn",
             shell: [
-                "mvn clean install"
+                "mvn -B clean install"
             ]
         })
         content.resources=JSON.parse(JSON.stringify(resource))

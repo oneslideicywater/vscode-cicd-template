@@ -43,11 +43,22 @@ pipeline {
                             // parse mailing list
                             if(datas.maintainers != null){
                                  MAILING_LIST = ci.concatMailingList(datas.maintainers)
-                                 echo "[INFO]邮件发送人:"
+                                 env.MENTION_LIST=ci.concatMailingList2(datas.maintainers)
+                                 echo "[INFO] 项目维护负责人列表:"
                                  println MAILING_LIST
+                            }else{
+                                 println "[ERROR] 维护人列表字段"maintainers"不能为空！"
+                                 sh 'exit 1'
                             }
                             if(datas.namespace == null){
-                                println "[ERROR]namespace required"
+                                println "[ERROR]命名空间不能为空!"
+                                sh 'exit 1'
+                            }
+                            // qy weinxin notification webhook url 
+                            if(datas.env !=null && datas.env.BOTHOOK!=null){
+                                env.BOTHOOK = datas.env.BOTHOOK
+                            }else{
+                                println "[ERROR]请填写企业微信机器人的webhook地址，否则您将无法获得构建进度！"
                                 sh 'exit 1'
                             }
                         }
@@ -153,7 +164,7 @@ pipeline {
                                         if(m["build-tool"] == "maven"){
                                              stage('maven-static-code-analysis') {
                                                     withSonarQubeEnv( installationName: 'sonarqube-server') { // You can override the credential to be used
-                                                         sh "cd ${m.path};mvn clean verify sonar:sonar"
+                                                         sh "cd ${m.path};mvn -B clean verify sonar:sonar"
                                                     }
                                              }
                                         }
@@ -182,13 +193,27 @@ pipeline {
                                       for(s in m.stages){
                                            echo "[${m.name}][INFO]stage: ${s.name}"
                                            stage("${s.name}"){
-                                               for(cmd in s.shell){
 
-                                                  // string substitution in cmd
-                                                   cmd = ci.substitute(cmd,m.env)
-                                                  // exec shell
-                                                   sh "cd ${m.path};${cmd}"
+                                               if(s.ignoreOnFailure!=null && s.ignoreOnFailure){
+                                                   catchError{
+                                                        for(cmd in s.shell){
+
+                                                          // string substitution in cmd
+                                                          cmd = ci.substitute(cmd,m.env)
+                                                          // exec shell
+                                                          sh "cd ${m.path};${cmd}"
+                                                        }
+                                                   } 
+                                               }else{
+                                                    for(cmd in s.shell){
+                                                        // string substitution in cmd
+                                                        cmd = ci.substitute(cmd,m.env)
+                                                        // exec shell
+                                                        sh "cd ${m.path};${cmd}"
+                                                    }
                                                }
+
+                                              
                                            }
                                       }
                                     }
@@ -227,22 +252,190 @@ pipeline {
                     }
                 }
             }
-            post{
-                success {
-                         echo "success build job"
-                         // build job: 'rsmis_rsmis-basic-service/master',propagate: true, wait: true
-                }
-                failure {
-                        script {
-                            def content=mailContent()
-
-                            // send email to developers
-                            echo "send email to mailing list[geoway.com.cn]: ${MAILING_LIST}"
-                            emailext body: "$content", subject: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS!', to: "${MAILING_LIST}"
-                        }
-                }
-            }
+          
         }
 
+
+    }
+    post{
+                always{
+
+                    container('jdk') {
+                        script{
+                                env.BUILD_DURATION= currentBuild.durationString.replaceAll(" and counting","")
+                                if(env.GIT_BRANCH=="master" || env.GIT_BRANCH=="main"){
+                                    env.ACCESS_HOST= "172.16.15.12"
+                                    env.ACCESS_PORT="30080"
+                                }else{
+                                    env.ACCESS_HOST= "172.16.67.137"
+                                    env.ACCESS_PORT="30080"
+                                }
+                                def values=null
+                                if (fileExists(".helm/values.yaml")){
+                                    values = readYaml file: '.helm/values.yaml'
+                                }
+                              
+                                if(values!=null){
+                                    env.ACCESS_PORT=values.service.nodePort
+                                    env.ACCESS_URL="http://${env.ACCESS_HOST}:${env.ACCESS_PORT}"
+                                }else{
+                                    env.ACCESS_URL="${env.BUILD_URL}"
+                                }
+                                
+                                
+                        }
+                        
+                        sh """
+                            curl '${BOTHOOK}' \
+                            -H 'Content-Type: application/json' \
+                            -d '{
+                                    "msgtype": "text",
+                                    "text": {
+                                        "content": "你发起的构建${JOB_NAME} 结果出来了，记得看下哦！(～￣▽￣)～",
+                                        "mentioned_list": ${MENTION_LIST}
+                                    }
+                            }'
+                                        
+                        """
+                    }
+                   
+                }
+                
+                success{
+                    container('jdk') {
+                        sh """
+                        
+                            curl '${BOTHOOK}' \
+                            -H 'Content-Type: application/json' \
+                            -d '{
+                                "msgtype":"template_card",
+                                "template_card":{
+                                    "card_type":"text_notice",
+                                    "source":{
+                                        "icon_url":"https://wework.qpic.cn/wwpic/252813_jOfDHtcISzuodLa_1629280209/0",
+                                        "desc":"jenkins",
+                                        "desc_color":0
+                                    },
+                                    "main_title":{
+                                        "title":"构建成功通知",
+                                        "desc":"${JOB_NAME}"
+                                    },
+                                    "emphasis_content":{
+                                        "title":"${BUILD_DURATION}",
+                                        "desc":"构建耗时"
+                                    },
+                                
+                                    "sub_title_text":"6666!同学,恭喜你的job ${JOB_NAME}刚刚构建成功了!",
+                                    "horizontal_content_list":[
+                                        {
+                                            "keyname":"👨邀请人",
+                                            "value":"jenkins"
+                                        },
+                                        {
+                                            "keyname":"📺控制台地址",
+                                            "value":"点击访问",
+                                            "type":1,
+                                            "url":"${BUILD_URL}"
+                                        },
+                                        {
+                                            "keyname":"🔗服务地址",
+                                            "value":"点击访问",
+                                            "type":1,
+                                            "url":"${ACCESS_URL}"
+                                            
+                                        }
+                                    ],
+                                    "jump_list":[
+                                        {
+                                            "type":1,
+                                            "url":"${BUILD_URL}",
+                                            "title":"jenkins控制台"
+                                        }
+                                        
+                                    ],
+                                    "card_action":{
+                                        "type":1,
+                                        "url":"${BUILD_URL}",
+                                        "pagepath":"PAGEPATH"
+                                    }
+                                }
+                            }'
+                        
+                        
+                        """
+                    }
+                    
+                    
+                    
+            
+
+                    
+                }
+                failure{
+                    
+                    container('jdk') {
+                        sh """
+                        
+                            curl '${BOTHOOK}' \
+                            -H 'Content-Type: application/json' \
+                            -d '{
+                                "msgtype":"template_card",
+                                "template_card":{
+                                    "card_type":"text_notice",
+                                    "source":{
+                                        "icon_url":"https://wework.qpic.cn/wwpic/252813_jOfDHtcISzuodLa_1629280209/0",
+                                        "desc":"jenkins",
+                                        "desc_color":0
+                                    },
+                                    "main_title":{
+                                        "title":"构建失败通知",
+                                        "desc":"${JOB_NAME}"
+                                    },
+                                    "emphasis_content":{
+                                        "title":"${BUILD_DURATION}",
+                                        "desc":"构建耗时"
+                                    },
+                                
+                                    "sub_title_text":"你的构建 ${JOB_NAME} 又出问题了😱！ 怎么回事啊,小老弟! ",
+                                    "horizontal_content_list":[
+                                        {
+                                            "keyname":"👨邀请人",
+                                            "value":"jenkins"
+                                        },
+                                        {
+                                            "keyname":"📺控制台日志",
+                                            "value":"点击访问",
+                                            "type":1,
+                                            "url":"${BUILD_URL}/console"
+                                        },
+                                        {
+                                            "keyname":"🚀请求帮助",
+                                            "value":"lifengqian@geoway.com.cn"
+                                        },
+                                    
+                                    ],
+                                    "jump_list":[
+                                        {
+                                            "type":1,
+                                            "url":"${BUILD_URL}",
+                                            "title":"jenkins控制台"
+                                        }
+                                        
+                                    ],
+                                    "card_action":{
+                                        "type":1,
+                                        "url":"${BUILD_URL}",
+                                        "pagepath":"PAGEPATH"
+                                    }
+                                }
+                            }'
+                        
+                        
+                        """
+                    }
+                    
+                }
+                
     }
 }
+

@@ -3,7 +3,7 @@
   "displayName": "cicd-template",
   "description": "",
   "publisher": "oneslideicywater",
-  "version": "3.0.1",
+  "version": "3.1.1",
   "icon": "cicd-template.png",
   "engines": {
     "vscode": "^1.70.0"

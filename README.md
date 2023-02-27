@@ -39,6 +39,16 @@ easybuild:
 
 after add it to `cicd.yaml`. Enter `Ctrl+Shift+P`, input `easybuild`. you'll trigger a job build.
 
+### 腾讯企业微信通知
+ 
+- cicd.yaml
+
+```yaml
+env:
+  BOTHOOK: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?kexxx"
+```
+
+在顶级父模块添加`BOTHOOK`环境变量，将值更新为机器人的webhook地址。当构建完成时，即可获取机器人构建完成通知。
 
 ## Extension Settings
 
